@@ -23,7 +23,8 @@ static struct sigaction memsig;
 int fd;
 int sizePage;
 
-void execute_segment(siginfo_t *info, char *foundSegment, unsigned int *indexSegment) {
+void execute_segment(siginfo_t *info, char *foundSegment, unsigned int *indexSegment)
+{
 	for (unsigned int i = 0; i < exec->segments_no; i++) {
 		if ((int) info->si_addr <= exec->segments[i].vaddr + exec->segments[i].mem_size) {
 			*foundSegment = 0x1;
