@@ -25,6 +25,7 @@ int so_init_loader(void)
 	sizePage = getpagesize();
 
 	exe.sa_sigaction = segv_handler;
+	exe.sa_flags = SA_SIGINFO;
 
 	if (sigemptyset(&exe.sa_mask) == -1) {
 		perror("Eroare sigemptyset");
@@ -36,9 +37,7 @@ int so_init_loader(void)
 		exit(1);
 	}
 
-	exe.sa_flags = SA_SIGINFO;
-
-	if (sigaction(SIGSEGV, &exe, &oldaction) == -1) {
+	if (sigaction(SIGSEGV, &exe, &old_action) == -1) {
 		perror("Eroare sigaction");
 		exit(1);
 	}
