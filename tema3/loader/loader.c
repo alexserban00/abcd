@@ -16,6 +16,7 @@ static so_exec_t *exec;
 
 int fd;
 int sizePage;
+static struct sigaction old_action;
 
 int so_init_loader(void)
 {
@@ -23,9 +24,24 @@ int so_init_loader(void)
 
 	sizePage = getpagesize();
 
-	sigemptyset(&exe.sa_mask);
-	sigaddset(&exe.sa_mask, SIGSEGV);
+	exe.sa_sigaction = segv_handler;
+
+	if (sigemptyset(&exe.sa_mask) == -1) {
+		perror("Eroare sigemptyset");
+		exit(1);
+	}
+
+	if (sigaddset(&exe.sa_mask, SIGSEGV) == -1) {
+		perror("Eroare sigaddset");
+		exit(1);
+	}
+
 	exe.sa_flags = SA_SIGINFO;
+
+	if (sigaction(SIGSEGV, &exe, &oldaction) == -1) {
+		perror("Eroare sigaction");
+		exit(1);
+	}
 
 	return -1;
 }
