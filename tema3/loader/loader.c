@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <fcntl.h>
-#include <errno.h>
+#include <sys/mman.h>
 #include <math.h>
 
 #include "exec_parser.h"
