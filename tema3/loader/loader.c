@@ -9,8 +9,9 @@
 #include <unistd.h>
 #include <signal.h>
 #include <fcntl.h>
-#include <sys/mman.h>
+#include <errno.h>
 #include <math.h>
+#include <sys/mman.h>
 
 #include "exec_parser.h"
 
@@ -141,4 +142,3 @@ int so_execute(char *path, char *argv[])
 
 	return -1;
 }
-
