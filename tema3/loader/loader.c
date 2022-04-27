@@ -23,7 +23,7 @@ static struct sigaction memsig;
 int fd;
 int sizePage;
 
-static void execute_signal(int signum, siginfo_t *info, void *context)
+void execute_signal(int signum, siginfo_t *info, void *context)
 {
 	int i, page_found = 0, page_segment_index = -1;
 	void *mmap_ret;
