@@ -69,7 +69,7 @@ void execute_signal(int signo, siginfo_t *sig_info, void *sig_context)
 			return;
 		}
 
-		else if (ret_msync == -1 && errno == ENOMEM) {
+		else if (errno == ENOMEM) {
 			if (mmap((void *) page_addr, sizePage, exec_perm, MMAP_FLAG, fd, exec_offset + indexPage * sizePage) == MAP_FAILED) {
 				memsig.sa_sigaction(signo, sig_info, sig_context);
 				return;
