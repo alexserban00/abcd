@@ -5,7 +5,6 @@
 #include <signal.h>
 #include <unistd.h>
 #include <sys/mman.h>
-#include <cygwin/signal.h>
 
 #include "exec_parser.h"
 
