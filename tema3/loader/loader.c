@@ -26,13 +26,13 @@ int sizePage;
 void execute_signal(int signum, siginfo_t *info, void *context)
 {
 	char foundSegment = 0x0;
-	int page_segment_index = -1;
+	int indexSegment;
 	int page_index, msync_ret;
 
 	for (int i = 0; i < exec->segments_no; i++) {
 		if ((int) info->si_addr <= exec->segments[i].vaddr + exec->segments[i].mem_size) {
 			foundSegment = 0x1;
-			page_segment_index = i;
+			indexSegment = i;
 			break;
 		}
 	}
@@ -43,11 +43,11 @@ void execute_signal(int signum, siginfo_t *info, void *context)
 	}
 
 	else {
-		uintptr_t vaddr = exec->segments[page_segment_index].vaddr;
-		unsigned int file_size = exec->segments[page_segment_index].file_size;
-		unsigned int mem_size = exec->segments[page_segment_index].mem_size;
-		unsigned int offset = exec->segments[page_segment_index].offset;
-		unsigned int perm = exec->segments[page_segment_index].perm;
+		uintptr_t vaddr = exec->segments[indexSegment].vaddr;
+		unsigned int file_size = exec->segments[indexSegment].file_size;
+		unsigned int mem_size = exec->segments[indexSegment].mem_size;
+		unsigned int offset = exec->segments[indexSegment].offset;
+		unsigned int perm = exec->segments[indexSegment].perm;
 		uintptr_t addr = (uintptr_t) info->si_addr;
 		uintptr_t page_addr;
 
