@@ -15,7 +15,7 @@
 #include "exec_parser.h"
 
 #define MMAP_FLAG MAP_FIXED | MAP_PRIVATE
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MIN(a, b) ((a) > (b) ? (a) : (b))
 
 static so_exec_t *exec;
 static struct sigaction memsig;
