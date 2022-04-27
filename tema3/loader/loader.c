@@ -15,6 +15,7 @@
 #include "exec_parser.h"
 
 #define MMAP_FLAG MAP_FIXED | MAP_PRIVATE
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 static so_exec_t *exec;
 static struct sigaction memsig;
@@ -55,25 +56,25 @@ void execute_signal(int signo, siginfo_t *sig_info, void *sig_context)
 		uintptr_t addr = (uintptr_t) sig_info->si_addr;
 		uintptr_t page_addr;
 
-		int page_index;
-		int msync_ret;
+		int ret_msync;
+		int indexPage;
 
-		page_index = (addr - exec_vaddr) / sizePage;
-		page_addr = exec_vaddr + (page_index * sizePage);
-		msync_ret = msync((int *) page_addr, sizePage, 0);
+		indexPage = (addr - exec_vaddr) / sizePage;
+		page_addr = exec_vaddr + (indexPage * sizePage);
+		ret_msync = msync((int *) page_addr, sizePage, 0);
 
-		if (!msync_ret) {
+		if (!ret_msync) {
 			memsig.sa_sigaction(signo, sig_info, sig_context);
 			return;
 		}
 
-		else if (msync_ret == -1 && errno == ENOMEM) {
-			if (mmap((void *) page_addr, sizePage, exec_perm, MMAP_FLAG, fd, exec_offset + page_index * sizePage) == MAP_FAILED) {
+		else if (ret_msync == -1 && errno == ENOMEM) {
+			if (mmap((void *) page_addr, sizePage, exec_perm, MMAP_FLAG, fd, exec_offset + indexPage * sizePage) == MAP_FAILED) {
 				memsig.sa_sigaction(signo, sig_info, sig_context);
 				return;
 			}
 
-			if (page_addr > exec_vaddr + exec_file_size - sizePage && page_addr <= exec_vaddr + exec_file_size && page_addr + sizePage <= exec_vaddr + exec_mem_size)
+			if (page_addr > exec_vaddr + exec_file_size - sizePage && page_addr <= exec_vaddr + MIN(exec_file_size, exec_mem_size - sizePage))
 				memset((void *) exec_vaddr + exec_file_size, 0, sizePage - (exec_vaddr + exec_file_size - page_addr));
 
 			else if (page_addr > exec_vaddr + exec_file_size && page_addr < exec_vaddr + exec_mem_size - sizePage)
@@ -133,4 +134,3 @@ int so_execute(char *path, char *argv[])
 
 	return -1;
 }
-
