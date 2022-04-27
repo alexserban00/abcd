@@ -23,11 +23,11 @@ int sizePage;
 
 void execute_signal(int signum, siginfo_t *info, void *context)
 {
-	int i, page_found = 0, page_segment_index = -1;
-	void *mmap_ret;
+	int page_found = 0;
+	int page_segment_index = -1;
 	int page_index, msync_ret;
 
-	for (i = 0; i < exec->segments_no; i++) {
+	for (int i = 0; i < exec->segments_no; i++) {
 		if ((int) info->si_addr >= exec->segments[i].vaddr
 				&& (int) info->si_addr <= exec->segments[i].vaddr
 				+ exec->segments[i].mem_size) {
@@ -54,18 +54,18 @@ void execute_signal(int signum, siginfo_t *info, void *context)
 		page_index = floor((addr - vaddr) / sizePage);
 		page_addr = vaddr + (page_index * sizePage);
 		msync_ret = msync((int *) page_addr, sizePage, 0);
+
 		if (msync_ret == 0) {
 			memsig.sa_sigaction(signum, info, context);
 			return;
 		}
+
 		if (msync_ret == -1 && errno == ENOMEM) {
-			mmap_ret = mmap((void *) page_addr, sizePage, perm,
-					MAP_FIXED | MAP_PRIVATE, fd,
-					offset + page_index * sizePage);
-			if (mmap_ret == MAP_FAILED) {
+			if (mmap((void *) page_addr, sizePage, perm, MAP_FIXED | MAP_PRIVATE, fd, offset + page_index * sizePage) == MAP_FAILED) {
 				memsig.sa_sigaction(signum, info, context);
 				return;
 			}
+
 			if (page_addr <= vaddr + file_size
 				&& page_addr + sizePage > vaddr + file_size
 				&& page_addr + sizePage <= vaddr + mem_size) {
@@ -73,19 +73,25 @@ void execute_signal(int signum, siginfo_t *info, void *context)
 
 				memset((void *) vaddr + file_size, 0, end);
 				return;
-			} else if (page_addr > vaddr + file_size
+			}
+
+			else if (page_addr > vaddr + file_size
 				&& page_addr + sizePage < vaddr + mem_size) {
 
 				memset((void *) page_addr, 0, sizePage);
 				return;
-			} else if (page_addr > vaddr + file_size
+			}
+
+			else if (page_addr > vaddr + file_size
 				&& page_addr < vaddr + mem_size
 				&& page_addr + sizePage >= vaddr + mem_size) {
 				unsigned int count = (unsigned int) ((vaddr + mem_size) - page_addr);
 
 				memset((void *) page_addr, 0, count);
 				return;
-			} else if (page_addr <= vaddr + file_size
+			}
+
+			else if (page_addr <= vaddr + file_size
 				&& page_addr + sizePage >= vaddr + mem_size) {
 
 				unsigned int count = (unsigned int) (mem_size - file_size);
