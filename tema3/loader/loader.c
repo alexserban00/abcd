@@ -15,7 +15,7 @@
 #include "exec_parser.h"
 
 #define MMAP_FLAG MAP_FIXED | MAP_PRIVATE
-#define MIN(a, b) ((a) > (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 static so_exec_t *exec;
 static struct sigaction memsig;
@@ -74,14 +74,27 @@ void execute_signal(int signo, siginfo_t *sig_info, void *sig_context)
 				return;
 			}
 
-			if (page_addr > exec_vaddr + exec_file_size - sizePage && page_addr <= exec_vaddr + MIN(exec_file_size, exec_mem_size - sizePage))
-				memset((void *) exec_vaddr + exec_file_size, 0, sizePage - (exec_vaddr + exec_file_size - page_addr));
+			// if (page_addr > exec_vaddr + exec_file_size - sizePage && page_addr <= exec_vaddr + MAX(exec_file_size, exec_mem_size - sizePage))
+			// 	memset((void *) exec_vaddr + exec_file_size, 0, sizePage - (exec_vaddr + exec_file_size - page_addr));
 
-			else if (page_addr > exec_vaddr + exec_file_size && page_addr < exec_vaddr + exec_mem_size - sizePage)
-				memset((void *) page_addr, 0, sizePage);
+			// else if (page_addr > exec_vaddr + exec_file_size && page_addr < exec_vaddr + exec_mem_size - sizePage)
+			// 	memset((void *) page_addr, 0, sizePage);
 
-			else if (page_addr > exec_vaddr + exec_file_size && page_addr < exec_vaddr + exec_mem_size && page_addr + sizePage >= exec_vaddr + exec_mem_size)
-				memset((void *) page_addr, 0, exec_vaddr + exec_mem_size - page_addr);
+			// else if (page_addr > exec_vaddr + exec_file_size && page_addr < exec_vaddr + exec_mem_size && page_addr + sizePage >= exec_vaddr + exec_mem_size)
+			// 	memset((void *) page_addr, 0, exec_vaddr + exec_mem_size - page_addr);
+
+			if (page_addr > exec_vaddr + exec_file_size - sizePage) {
+				if (page_addr <= exec_vaddr + MAX(exec_file_size, exec_mem_size - sizePage))
+					memset((void *) exec_vaddr + exec_file_size, 0, sizePage - (exec_vaddr + exec_file_size - page_addr));
+			}
+
+			else if (page_addr > exec_vaddr + exec_file_size) {
+				if (page_addr < exec_vaddr + exec_mem_size - sizePage)
+					memset((void *) page_addr, 0, sizePage);
+
+				else if (exec_vaddr + exec_mem_size)
+					memset((void *) page_addr, 0, exec_vaddr + exec_mem_size - page_addr);
+			}
 
 			else if (page_addr >= exec_vaddr + exec_mem_size - sizePage && page_addr <= exec_vaddr + exec_file_size)
 				memset((void *) exec_vaddr + exec_file_size, 0, exec_mem_size - exec_file_size);
