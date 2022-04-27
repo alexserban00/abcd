@@ -24,7 +24,7 @@ int so_init_loader(void)
 
 	sizePage = getpagesize();
 
-	exe.sa_sigaction = segv_handler;
+//	exe.sa_sigaction = segv_handler;
 	exe.sa_flags = SA_SIGINFO;
 
 	if (sigemptyset(&exe.sa_mask) == -1) {
