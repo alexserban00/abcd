@@ -66,34 +66,25 @@ void execute_signal(int signum, siginfo_t *info, void *context)
 				return;
 			}
 
-			if (page_addr <= vaddr + file_size
-				&& page_addr + sizePage > vaddr + file_size
-				&& page_addr + sizePage <= vaddr + mem_size) {
+			if (page_addr <= vaddr + file_size && page_addr + sizePage > vaddr + file_size && page_addr + sizePage <= vaddr + mem_size) {
 				unsigned int end = (unsigned int) sizePage - (vaddr + file_size - page_addr);
 
 				memset((void *) vaddr + file_size, 0, end);
-				return;
 			}
 
-			else if (page_addr > vaddr + file_size && page_addr + sizePage < vaddr + mem_size) {
-
+			else if (page_addr > vaddr + file_size && page_addr + sizePage < vaddr + mem_size)
 				memset((void *) page_addr, 0, sizePage);
-				return;
-			}
 
 			else if (page_addr > vaddr + file_size && page_addr < vaddr + mem_size && page_addr + sizePage >= vaddr + mem_size) {
 				unsigned int count = (unsigned int) ((vaddr + mem_size) - page_addr);
 
 				memset((void *) page_addr, 0, count);
-				return;
 			}
 
 			else if (page_addr <= vaddr + file_size && page_addr + sizePage >= vaddr + mem_size) {
-
 				unsigned int count = (unsigned int) (mem_size - file_size);
 
 				memset((void *) vaddr + file_size, 0, count);
-				return;
 			}
 		}
 	}
@@ -144,3 +135,4 @@ int so_execute(char *path, char *argv[])
 
 	return -1;
 }
+
