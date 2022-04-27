@@ -68,6 +68,7 @@ void execute_signal(int signum, siginfo_t *info, void *context)
 
 			if (page_addr <= vaddr + file_size && page_addr + sizePage > vaddr + file_size && page_addr + sizePage <= vaddr + mem_size) {
 				unsigned int end = (unsigned int) sizePage - (vaddr + file_size - page_addr);
+
 				memset((void *) vaddr + file_size, 0, end);
 			}
 
