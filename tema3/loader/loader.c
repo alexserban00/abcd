@@ -77,11 +77,13 @@ void execute_signal(int signum, siginfo_t *info, void *context)
 
 			else if (page_addr > vaddr + file_size && page_addr < vaddr + mem_size && page_addr + sizePage >= vaddr + mem_size) {
 				unsigned int count = (unsigned int) ((vaddr + mem_size) - page_addr);
+
 				memset((void *) page_addr, 0, count);
 			}
 
 			else if (page_addr <= vaddr + file_size && page_addr + sizePage >= vaddr + mem_size) {
 				unsigned int count = (unsigned int) (mem_size - file_size);
+
 				memset((void *) vaddr + file_size, 0, count);
 			}
 		}
