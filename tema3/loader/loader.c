@@ -15,6 +15,8 @@
 
 #include "exec_parser.h"
 
+#define MMAP_FLAG MAP_FIXED | MAP_PRIVATE
+
 static so_exec_t *exec;
 static struct sigaction memsig;
 
@@ -23,34 +25,32 @@ int sizePage;
 
 void execute_signal(int signum, siginfo_t *info, void *context)
 {
-	int page_found = 0;
+	char foundSegment = 0x0;
 	int page_segment_index = -1;
 	int page_index, msync_ret;
 
 	for (int i = 0; i < exec->segments_no; i++) {
-		if ((int) info->si_addr >= exec->segments[i].vaddr
-				&& (int) info->si_addr <= exec->segments[i].vaddr
-				+ exec->segments[i].mem_size) {
-			page_found = 1;
+		if ((int) info->si_addr >= exec->segments[i].vaddr && (int) info->si_addr <= exec->segments[i].vaddr + exec->segments[i].mem_size) {
+			foundSegment = 0x1;
 			page_segment_index = i;
 			break;
 		}
-
 	}
-	if (page_found == 0) {
+
+	if (!page_found) {
 		memsig.sa_sigaction(signum, info, context);
 		return;
 	}
 
-	uintptr_t vaddr = exec->segments[page_segment_index].vaddr;
-	unsigned int file_size = exec->segments[page_segment_index].file_size;
-	unsigned int mem_size = exec->segments[page_segment_index].mem_size;
-	unsigned int offset = exec->segments[page_segment_index].offset;
-	unsigned int perm = exec->segments[page_segment_index].perm;
-	uintptr_t addr = (uintptr_t) info->si_addr;
-	uintptr_t page_addr;
+	else {
+		uintptr_t vaddr = exec->segments[page_segment_index].vaddr;
+		unsigned int file_size = exec->segments[page_segment_index].file_size;
+		unsigned int mem_size = exec->segments[page_segment_index].mem_size;
+		unsigned int offset = exec->segments[page_segment_index].offset;
+		unsigned int perm = exec->segments[page_segment_index].perm;
+		uintptr_t addr = (uintptr_t) info->si_addr;
+		uintptr_t page_addr;
 
-	if (page_found == 1) {
 		page_index = floor((addr - vaddr) / sizePage);
 		page_addr = vaddr + (page_index * sizePage);
 		msync_ret = msync((int *) page_addr, sizePage, 0);
@@ -61,7 +61,7 @@ void execute_signal(int signum, siginfo_t *info, void *context)
 		}
 
 		if (msync_ret == -1 && errno == ENOMEM) {
-			if (mmap((void *) page_addr, sizePage, perm, MAP_FIXED | MAP_PRIVATE, fd, offset + page_index * sizePage) == MAP_FAILED) {
+			if (mmap((void *) page_addr, sizePage, perm, MMAP_FLAG, fd, offset + page_index * sizePage) == MAP_FAILED) {
 				memsig.sa_sigaction(signum, info, context);
 				return;
 			}
@@ -75,24 +75,20 @@ void execute_signal(int signum, siginfo_t *info, void *context)
 				return;
 			}
 
-			else if (page_addr > vaddr + file_size
-				&& page_addr + sizePage < vaddr + mem_size) {
+			else if (page_addr > vaddr + file_size && page_addr + sizePage < vaddr + mem_size) {
 
 				memset((void *) page_addr, 0, sizePage);
 				return;
 			}
 
-			else if (page_addr > vaddr + file_size
-				&& page_addr < vaddr + mem_size
-				&& page_addr + sizePage >= vaddr + mem_size) {
+			else if (page_addr > vaddr + file_size && page_addr < vaddr + mem_size && page_addr + sizePage >= vaddr + mem_size) {
 				unsigned int count = (unsigned int) ((vaddr + mem_size) - page_addr);
 
 				memset((void *) page_addr, 0, count);
 				return;
 			}
 
-			else if (page_addr <= vaddr + file_size
-				&& page_addr + sizePage >= vaddr + mem_size) {
+			else if (page_addr <= vaddr + file_size && page_addr + sizePage >= vaddr + mem_size) {
 
 				unsigned int count = (unsigned int) (mem_size - file_size);
 
