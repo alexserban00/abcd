@@ -92,7 +92,7 @@ void execute_signal(int signo, siginfo_t *sig_info, void *sig_context)
 				if (page_addr < exec_vaddr + exec_mem_size - sizePage)
 					memset((void *) page_addr, 0, sizePage);
 
-				else if (page_addr < exec_vaddr + exec_mem_size)
+				else if (page_addr < exec_vaddr + exec_mem_size && page_addr >= exec_vaddr + exec_mem_size - sizePage)
 					memset((void *) page_addr, 0, exec_vaddr + exec_mem_size - page_addr);
 			}
 
@@ -147,3 +147,4 @@ int so_execute(char *path, char *argv[])
 
 	return -1;
 }
+
