@@ -147,4 +147,3 @@ int so_execute(char *path, char *argv[])
 
 	return -1;
 }
-
