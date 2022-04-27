@@ -23,10 +23,9 @@ static struct sigaction memsig;
 int fd;
 int sizePage;
 
-void execute_segment(siginfo_t *info, char *foundSegment, unsigned int *indexSegment)
-{
+void execute_segment(siginfo_t *sig_info, char *foundSegment, unsigned int *indexSegment) {
 	for (unsigned int i = 0; i < exec->segments_no; i++) {
-		if ((int) info->si_addr <= exec->segments[i].vaddr + exec->segments[i].mem_size) {
+		if ((int) sig_info->si_addr <= exec->segments[i].vaddr + exec->segments[i].mem_size) {
 			*foundSegment = 0x1;
 			*indexSegment = i;
 			return;
@@ -34,18 +33,15 @@ void execute_segment(siginfo_t *info, char *foundSegment, unsigned int *indexSeg
 	}
 }
 
-void execute_signal(int signum, siginfo_t *info, void *context)
+void execute_signal(int signo, siginfo_t *sig_info, void *sig_context)
 {
 	char foundSegment = 0x0;
 	unsigned int indexSegment;
 
-	int page_index;
-	int msync_ret;
-
-	execute_segment(info, &foundSegment, &indexSegment);
+	execute_segment(sig_info, &foundSegment, &indexSegment);
 
 	if (!foundSegment) {
-		memsig.sa_sigaction(signum, info, context);
+		memsig.sa_sigaction(signo, sig_info, sig_context);
 		return;
 	}
 
@@ -55,21 +51,24 @@ void execute_signal(int signum, siginfo_t *info, void *context)
 		unsigned int mem_size = exec->segments[indexSegment].mem_size;
 		unsigned int offset = exec->segments[indexSegment].offset;
 		unsigned int perm = exec->segments[indexSegment].perm;
-		uintptr_t addr = (uintptr_t) info->si_addr;
+		uintptr_t addr = (uintptr_t) sig_info->si_addr;
 		uintptr_t page_addr;
+
+		int page_index;
+		int msync_ret;
 
 		page_index = floor((addr - vaddr) / sizePage);
 		page_addr = vaddr + (page_index * sizePage);
 		msync_ret = msync((int *) page_addr, sizePage, 0);
 
-		if (msync_ret == 0) {
-			memsig.sa_sigaction(signum, info, context);
+		if (!msync_ret) {
+			memsig.sa_sigaction(signo, sig_info, sig_context);
 			return;
 		}
 
-		if (msync_ret == -1 && errno == ENOMEM) {
+		else if (msync_ret == -1 && errno == ENOMEM) {
 			if (mmap((void *) page_addr, sizePage, perm, MMAP_FLAG, fd, offset + page_index * sizePage) == MAP_FAILED) {
-				memsig.sa_sigaction(signum, info, context);
+				memsig.sa_sigaction(signo, sig_info, sig_context);
 				return;
 			}
 
@@ -82,17 +81,11 @@ void execute_signal(int signum, siginfo_t *info, void *context)
 			else if (page_addr > vaddr + file_size && page_addr + sizePage < vaddr + mem_size)
 				memset((void *) page_addr, 0, sizePage);
 
-			else if (page_addr > vaddr + file_size && page_addr < vaddr + mem_size && page_addr + sizePage >= vaddr + mem_size) {
-				unsigned int count = (unsigned int) ((vaddr + mem_size) - page_addr);
+			else if (page_addr > vaddr + file_size && page_addr < vaddr + mem_size && page_addr + sizePage >= vaddr + mem_size)
+				memset((void *) page_addr, 0, (unsigned int) ((vaddr + mem_size) - page_addr));
 
-				memset((void *) page_addr, 0, count);
-			}
-
-			else if (page_addr <= vaddr + file_size && page_addr + sizePage >= vaddr + mem_size) {
-				unsigned int count = (unsigned int) (mem_size - file_size);
-
-				memset((void *) vaddr + file_size, 0, count);
-			}
+			else if (page_addr >= vaddr + mem_size - sizePage && page_addr <= vaddr + file_size)
+				memset((void *) vaddr + file_size, 0, (unsigned int) (mem_size - file_size));
 		}
 	}
 }
