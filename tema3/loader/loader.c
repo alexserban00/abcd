@@ -10,7 +10,6 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <math.h>
 #include <sys/mman.h>
 
 #include "exec_parser.h"
@@ -47,11 +46,12 @@ void execute_signal(int signo, siginfo_t *sig_info, void *sig_context)
 	}
 
 	else {
-		uintptr_t vaddr = exec->segments[indexSegment].vaddr;
-		unsigned int file_size = exec->segments[indexSegment].file_size;
-		unsigned int mem_size = exec->segments[indexSegment].mem_size;
-		unsigned int offset = exec->segments[indexSegment].offset;
-		unsigned int perm = exec->segments[indexSegment].perm;
+		uintptr_t exec_vaddr = exec->segments[indexSegment].vaddr;
+		unsigned int exec_file_size = exec->segments[indexSegment].file_size;
+		unsigned int exec_mem_size = exec->segments[indexSegment].mem_size;
+		unsigned int exec_offset = exec->segments[indexSegment].offset;
+		unsigned int exec_perm = exec->segments[indexSegment].perm;
+
 		uintptr_t addr = (uintptr_t) sig_info->si_addr;
 		uintptr_t page_addr;
 
@@ -68,22 +68,22 @@ void execute_signal(int signo, siginfo_t *sig_info, void *sig_context)
 		}
 
 		else if (msync_ret == -1 && errno == ENOMEM) {
-			if (mmap((void *) page_addr, sizePage, perm, MMAP_FLAG, fd, offset + page_index * sizePage) == MAP_FAILED) {
+			if (mmap((void *) page_addr, sizePage, exec_perm, MMAP_FLAG, fd, exec_offset + page_index * sizePage) == MAP_FAILED) {
 				memsig.sa_sigaction(signo, sig_info, sig_context);
 				return;
 			}
 
-			if (page_addr <= vaddr + file_size && page_addr + sizePage > vaddr + file_size && page_addr + sizePage <= vaddr + mem_size)
-				memset((void *) vaddr + file_size, 0, sizePage - (vaddr + file_size - page_addr));
+			if (page_addr > exec_vaddr + exec_file_size - sizePage && page_addr <= exec_vaddr + exec_file_size && page_addr + sizePage <= exec_vaddr + exec_mem_size)
+				memset((void *) exec_vaddr + exec_file_size, 0, sizePage - (exec_vaddr + exec_file_size - page_addr));
 
-			else if (page_addr > vaddr + file_size && page_addr + sizePage < vaddr + mem_size)
+			else if (page_addr > exec_vaddr + exec_file_size && page_addr < exec_vaddr + exec_mem_size - sizePage)
 				memset((void *) page_addr, 0, sizePage);
 
-			else if (page_addr > vaddr + file_size && page_addr < vaddr + mem_size && page_addr + sizePage >= vaddr + mem_size)
-				memset((void *) page_addr, 0, vaddr + mem_size - page_addr);
+			else if (page_addr > exec_vaddr + exec_file_size && page_addr < exec_vaddr + exec_mem_size && page_addr + sizePage >= exec_vaddr + exec_mem_size)
+				memset((void *) page_addr, 0, exec_vaddr + exec_mem_size - page_addr);
 
-			else if (page_addr >= vaddr + mem_size - sizePage && page_addr <= vaddr + file_size)
-				memset((void *) vaddr + file_size, 0, mem_size - file_size);
+			else if (page_addr >= exec_vaddr + exec_mem_size - sizePage && page_addr <= exec_vaddr + exec_file_size)
+				memset((void *) exec_vaddr + exec_file_size, 0, exec_mem_size - exec_file_size);
 		}
 	}
 }
