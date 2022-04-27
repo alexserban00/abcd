@@ -78,8 +78,8 @@ void execute_signal(int signo, siginfo_t *sig_info, void *sig_context)
 			if (page_addr > exec_vaddr + exec_file_size - sizePage && page_addr <= exec_vaddr + MAX(exec_file_size, exec_mem_size - sizePage))
 				memset((void *) exec_vaddr + exec_file_size, 0, sizePage - (exec_vaddr + exec_file_size - page_addr));
 
-			else if (page_addr > exec_vaddr + exec_file_size && page_addr < exec_vaddr + exec_mem_size - sizePage)
-				memset((void *) page_addr, 0, sizePage);
+// 			else if (page_addr > exec_vaddr + exec_file_size && page_addr < exec_vaddr + exec_mem_size - sizePage)
+// 				memset((void *) page_addr, 0, sizePage);
 
 			else if (page_addr > exec_vaddr + MIN(exec_file_size, exec_mem_size - sizePage) && page_addr < exec_vaddr + exec_mem_size)
 				memset((void *) page_addr, 0, exec_vaddr + exec_mem_size - page_addr);
