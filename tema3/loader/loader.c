@@ -23,19 +23,25 @@ static struct sigaction memsig;
 int fd;
 int sizePage;
 
+void execute_segment(siginfo_t *info, char *foundSegment, unsigned int *indexSegment) {
+	for (unsigned int i = 0; i < exec->segments_no; i++) {
+		if ((int) info->si_addr <= exec->segments[i].vaddr + exec->segments[i].mem_size) {
+			*foundSegment = 0x1;
+			*indexSegment = i;
+			return;
+		}
+	}
+}
+
 void execute_signal(int signum, siginfo_t *info, void *context)
 {
 	char foundSegment = 0x0;
-	int indexSegment;
-	int page_index, msync_ret;
+	unsigned int indexSegment;
 
-	for (int i = 0; i < exec->segments_no; i++) {
-		if ((int) info->si_addr <= exec->segments[i].vaddr + exec->segments[i].mem_size) {
-			foundSegment = 0x1;
-			indexSegment = i;
-			break;
-		}
-	}
+	int page_index;
+	int msync_ret;
+
+	execute_segment(info, &foundSegment, &indexSegment);
 
 	if (!foundSegment) {
 		memsig.sa_sigaction(signum, info, context);
