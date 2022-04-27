@@ -58,8 +58,8 @@ void execute_signal(int signo, siginfo_t *sig_info, void *sig_context)
 		int page_index;
 		int msync_ret;
 
-		page_index = (addr - vaddr) / sizePage;
-		page_addr = vaddr + (page_index * sizePage);
+		page_index = (addr - exec_vaddr) / sizePage;
+		page_addr = exec_vaddr + (page_index * sizePage);
 		msync_ret = msync((int *) page_addr, sizePage, 0);
 
 		if (!msync_ret) {
@@ -133,3 +133,4 @@ int so_execute(char *path, char *argv[])
 
 	return -1;
 }
+
