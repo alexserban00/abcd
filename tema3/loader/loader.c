@@ -37,7 +37,7 @@ void execute_signal(int signum, siginfo_t *info, void *context)
 		}
 	}
 
-	if (!page_found) {
+	if (!foundSegment) {
 		memsig.sa_sigaction(signum, info, context);
 		return;
 	}
